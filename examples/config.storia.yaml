@@ -1,0 +1,77 @@
+# Example configuration for Storia.ro flat hunting in Romania
+---
+# Enable verbose logging
+verbose: true
+
+# Loop settings
+loop:
+    active: yes
+    sleeping_time: 900  # 15 minutes between checks
+    random_jitter: True
+
+# Database location
+database_location: ./data
+
+# Storia.ro search URLs for Bucharest apartments
+urls:
+  # 2-room apartments in Bucharest, max 500 EUR
+  - https://www.storia.ro/ro/rezultate/inchiriere/apartament/bucuresti?limit=36&price_to=500&no_of_rooms=2
+  
+  # Studios in Cluj-Napoca
+  - https://www.storia.ro/ro/rezultate/inchiriere/garsoniera/cluj-napoca?limit=36
+  
+  # 3-room apartments in Timisoara with minimum 70m²
+  - https://www.storia.ro/ro/rezultate/inchiriere/apartament/timisoara?limit=36&no_of_rooms=3&surface_from=70
+
+# Filter settings
+filters:
+  min_rooms: 1
+  max_price: 200000  # RON or EUR depending on listing
+  min_size: 40
+  excluded_titles:
+    - "fara contract"
+    - "subchiriez"
+    - "doar studente"
+
+# Message format (supports Romanian text)
+message: |
+    🏠 {title}
+    
+    📍 Locație: {address}
+    💶 Preț: {price}
+    📐 Suprafață: {size}
+    🛏️ Camere: {rooms}
+    
+    📝 Descriere:
+    {description}
+    
+    🔗 Link: {url}
+
+# Telegram notification (recommended)
+notifiers:
+  - telegram
+
+telegram:
+  bot_token: YOUR_BOT_TOKEN_HERE
+  notify_with_images: true  # Send photos from listings
+  receiver_ids:
+    - YOUR_CHAT_ID_HERE
+
+# Optional: Google Maps duration calculation
+# Useful for checking commute times in Romanian cities
+# google_maps_api:
+#   key: YOUR_API_KEY
+#   enable: true
+#
+# durations:
+#   - name: Work
+#     destination: "Piața Unirii, București, Romania"
+#     modes:
+#       - gm_id: transit
+#         title: "Transport Public"
+#       - gm_id: driving
+#         title: "Mașină"
+
+# Optional: Enable proxy if Storia.ro blocks your IP
+# use_proxy_list: false
+

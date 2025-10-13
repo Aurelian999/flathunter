@@ -20,11 +20,13 @@ loop:
 
 # List the URLs containing your filter properties below.
 # Currently supported services: www.immobilienscout24.de,
-# www.immowelt.de, www.wg-gesucht.de, www.kleinanzeigen.de and vrm-immo.de.
+# www.immowelt.de, www.wg-gesucht.de, www.kleinanzeigen.de, vrm-immo.de,
+# www.idealista.it, www.immobiliare.it, www.subito.it, and www.storia.ro.
 # List the URLs in the following format:
 # urls:
 # 	- https://www.immobilienscout24.de/Suche/...
 # 	- https://www.wg-gesucht.de/...
+#   - https://www.storia.ro/ro/rezultate/inchiriere/apartament/bucuresti
 urls:
 
 # Define filters to exclude flats that don't meet your critera.
