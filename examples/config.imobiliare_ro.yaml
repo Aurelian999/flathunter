@@ -1,0 +1,95 @@
+---
+# Imobiliare.ro Configuration Example
+# This configuration demonstrates how to use Flathunter with Imobiliare.ro,
+# a major Romanian real estate platform
+
+# Enable verbose logging for debugging (optional)
+# verbose: true
+
+# Loop configuration - how often to check for new listings
+loop:
+  active: yes
+  sleeping_time: 600  # Check every 10 minutes (600 seconds recommended minimum)
+  random_jitter: True  # Add random delay to avoid bot detection
+
+# URLs to search - Add your Imobiliare.ro search URLs here
+# Visit https://www.imobiliare.ro/, configure your search filters, and copy the URL
+urls:
+  # Bucharest - Apartments for sale
+  - https://www.imobiliare.ro/vanzare-apartamente/bucuresti
+  
+  # Cluj-Napoca - Apartments for rent (example - uncomment to use)
+  # - https://www.imobiliare.ro/inchirieri-apartamente/cluj-napoca
+  
+  # Timisoara - Houses for sale (example - uncomment to use)
+  # - https://www.imobiliare.ro/vanzare-case-vile/timisoara
+
+# Define filters to narrow down your search
+# All filters are optional - remove or comment out filters you don't need
+filters:
+  # Number of rooms
+  min_rooms: 2
+  max_rooms: 4
+  
+  # Size in square meters
+  min_size: 50
+  max_size: 100
+  
+  # Price range (check if prices are in RON or EUR on the site)
+  min_price: 50000
+  max_price: 150000
+  
+  # Exclude listings with certain words in the title (case-insensitive regex)
+  excluded_titles:
+    - "demisol"      # basement
+    - "subsol"       # underground
+    - "mansarda"     # attic (if you don't want it)
+    # Add more patterns as needed
+
+# Notification settings
+notifiers:
+  - telegram  # Enable Telegram notifications
+
+# Telegram configuration
+telegram:
+  bot_token: YOUR_TELEGRAM_BOT_TOKEN_HERE  # Get from @BotFather
+  receiver_ids:  # Your Telegram user ID(s)
+    - YOUR_TELEGRAM_CHAT_ID_HERE
+  notify_with_images: true  # Include property images in notifications
+
+# Message format for notifications (Romanian example)
+message:
+  # Use {title}, {rooms}, {price}, {size}, {url}, {address}, {durations}
+  title: |
+    Apartament nou găsit!
+  
+# Optional: Enable address resolution and duration calculation
+# Requires Google Maps API key
+resolve_addresses: false
+
+# Google Maps API (optional - for calculating commute times)
+# google_maps_api:
+#   key: YOUR_GOOGLE_MAPS_API_KEY_HERE
+
+# Google Cloud options (if using Google Cloud deployment)
+# google_cloud_project_id: YOUR_PROJECT_ID
+
+# Proxy configuration (optional - use if facing bot detection)
+# use_proxy_list: false
+
+# Captcha solving (optional - rarely needed for Imobiliare.ro)
+# captcha:
+#   driver_arguments:
+#     - "--headless=new"
+#   2captcha:
+#     api_key: YOUR_2CAPTCHA_KEY
+
+# Database location (stores IDs of processed listings)
+# Defaults to current directory if not specified
+# database_location: /path/to/database
+
+# Website interface (optional - if running web interface)
+# website:
+#   session_key: RANDOM_SECRET_KEY_HERE
+#   domain: http://localhost:8080
+#   bot_name: Flathunter
