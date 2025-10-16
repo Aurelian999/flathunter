@@ -21,6 +21,7 @@ class Storia(WebdriverCrawler):
         """Applies a page number to a formatted search URL and fetches the exposes at that page
         Storia.ro uses JavaScript rendering, so we always use the webdriver"""
         import time
+        import random
         from selenium.webdriver.common.by import By
         from selenium.webdriver.support.ui import WebDriverWait
         from selenium.webdriver.support import expected_conditions as EC
@@ -47,20 +48,48 @@ class Storia(WebdriverCrawler):
             except Exception as wait_error:
                 logger.warning("Storia.ro: Timeout waiting for listings, trying anyway: %s", str(wait_error))
             
-            # Additional wait for dynamic content
-            time.sleep(2)
+            # Additional wait for dynamic content with random jitter to appear more human
+            time.sleep(random.uniform(2, 4))
             
             # Scroll to trigger lazy loading (Storia.ro uses lazy loading)
+            # Add random human-like scrolling behavior
             try:
+                # Scroll to 25% of page
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.25);")
+                time.sleep(random.uniform(0.5, 1.5))
+                
+                # Scroll to 50% of page
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
-                time.sleep(1)
+                time.sleep(random.uniform(0.8, 1.8))
+                
+                # Scroll to 75% of page
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.75);")
+                time.sleep(random.uniform(0.5, 1.2))
+                
+                # Scroll to bottom
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(1)
+                time.sleep(random.uniform(1, 2))
+                
+                # Scroll back up a bit (human behavior)
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8);")
+                time.sleep(random.uniform(0.5, 1))
             except Exception as scroll_error:
                 logger.debug("Could not scroll page: %s", str(scroll_error))
             
             # Get the page source after JavaScript execution
             page_source = driver.page_source
+            
+            # Check for bot detection / CAPTCHA
+            if 'captcha-delivery.com' in page_source.lower() or 'please enable js' in page_source.lower():
+                logger.error("Storia.ro: CAPTCHA/bot detection triggered!")
+                logger.error("Response preview: %s", page_source[:500])
+                logger.info("Possible solutions:")
+                logger.info("  1. Enable 'use_proxy_list: True' in config.yaml")
+                logger.info("  2. Configure a CAPTCHA solver (Capmonster recommended)")
+                logger.info("  3. Increase 'sleeping_time' in config.yaml")
+                logger.info("  4. Wait a few hours before retrying")
+                # Return empty soup to avoid processing error page
+                return BeautifulSoup("<html><body></body></html>", 'lxml')
             
             # Debug: Check if we got actual content
             if len(page_source) < 1000:
