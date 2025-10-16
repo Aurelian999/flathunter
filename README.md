@@ -49,14 +49,14 @@ Currently available messaging services are [Telegram](https://telegram.org/), [M
 
 There are at least four different rental property marketplace sites that are widely used in Germany - [ImmoScout24](https://www.immobilienscout24.de/), [Immowelt](https://www.immowelt.de/), [WG-Gesucht](https://www.wg-gesucht.de/) and [Kleinanzeigen](https://www.kleinanzeigen.de/). Most people end up searching through listings on all four sites on an almost daily basis during their rental search.
 In Italy on the other hand, [idealista](https://www.idealista.it), [Subito](https://www.subito.it) and [Immobiliare.it](https://www.immobiliare.it) are very common for real-estate hunting.
-In Romania, [Storia.ro](https://www.storia.ro) is a popular platform for property listings.
+In Romania, [Storia.ro](https://www.storia.ro) and [Imobiliare.ro](https://www.imobiliare.ro) are popular platforms for property listings.
 
 With ```Flathunter```, instead of visiting the same pages on the same  sites every day, you can set the system up to scan every site, filtering by your search criteria, and notify you when new rental property becomes available that meets your criteria.
 
 ## Prerequisites
 * [Python 3.10+](https://www.python.org/)
 * [pipenv](https://pipenv.pypa.io/en/latest/)
-* [Chromium](https://www.chromium.org/) / [Google Chrome](https://www.google.com/chrome/) (*optional to scan ads on immobilienscout24.de, Kleinanzeigen, and storia.ro)
+* [Chromium](https://www.chromium.org/) / [Google Chrome](https://www.google.com/chrome/) (*optional to scan ads on immobilienscout24.de, Kleinanzeigen, storia.ro, and imobiliare.ro)
 * [Docker]() (*optional*)
 * [GCloud CLI]() (*optional*)
 
