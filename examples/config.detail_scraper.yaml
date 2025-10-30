@@ -1,0 +1,94 @@
+---
+# Example configuration for Flathunter with Detail Scraper
+# This configuration shows how to set up the detail scraper for
+# Storia.ro and Imobiliare.ro listings
+
+# Main loop configuration
+loop:
+    active: yes
+    sleeping_time: 600  # 10 minutes between main scraper runs
+    random_jitter: True
+
+# Detail scraper configuration
+# The detail scraper runs independently from the main loop
+detail_scraper:
+    loop_active: yes  # Should the detail scraper loop endlessly?
+    hours_lookback: 24  # Fetch details for listings from last 24 hours
+
+# Database location
+database_location: /path/to/database
+
+# URLs to monitor
+# Include Storia.ro and Imobiliare.ro URLs for detail scraping
+urls:
+  # Storia.ro examples
+  - https://www.storia.ro/ro/rezultate/inchiriere/apartament/bucuresti?limit=36&by=NEWEST
+  - https://www.storia.ro/ro/rezultate/vanzare/apartament/cluj/cluj--napoca?limit=36
+  
+  # Imobiliare.ro examples
+  - https://www.imobiliare.ro/inchirieri-apartamente/bucuresti
+  - https://www.imobiliare.ro/vanzare-apartamente/cluj-napoca
+
+# Filters
+filters:
+  min_rooms: 2
+  max_rooms: 4
+  min_size: 50
+  max_size: 100
+  min_price: 400  # EUR/month for rent
+  max_price: 1500
+  excluded_titles:
+    - "demisol"  # No basement apartments
+    - "subsol"
+    - "garsoniera"  # No studio apartments
+
+# Notifiers
+notifiers:
+  - telegram
+
+# Telegram configuration
+telegram:
+  bot_token: YOUR_BOT_TOKEN_HERE
+  receiver_ids:
+    - YOUR_CHAT_ID_HERE
+  notify_with_images: true
+
+# Message format
+# You can use the new detailed fields in your notifications
+message:
+  title: |
+    {title}
+    Prețul: {price}
+    Camere: {rooms} | Suprafață: {size} m²
+    
+    {url}
+    
+    📝 Detalii:
+    {description}
+    
+    🏢 Informații imobil:
+    An construcție: {construction_year}
+    Etaj: {floor}
+    Tip construcție: {building_type}
+    Stare: {condition}
+    
+    🔥 Încălzire: {heating}
+    🚗 Parcare: {parking}
+    
+    📸 Imagini: {image_count}
+
+# Google Cloud configuration (optional)
+# If deploying to Google Cloud, the detail scraper can run as a scheduled job
+# google_cloud_project_id: your-project-id
+
+# Captcha solving (recommended for high-volume scraping)
+# captcha:
+#   capmonster:
+#     api_key: YOUR_CAPMONSTER_KEY
+
+# Proxy configuration (optional, helps avoid rate limiting)
+# use_proxy_list: true
+
+# Headless browser (required for Storia and Imobiliare.ro)
+# Chrome/Chromium must be installed
+# headless_browser: true
