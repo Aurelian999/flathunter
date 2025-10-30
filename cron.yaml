@@ -2,3 +2,6 @@ cron:
 - description: "Hunt for flats"
   url: /hunt
   schedule: every 10 minutes synchronized
+- description: "Scrape listing details for Storia and Imobiliare.ro"
+  url: /scrape-details
+  schedule: every 1 hours synchronized

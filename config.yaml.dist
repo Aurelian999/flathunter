@@ -14,6 +14,14 @@ loop:
     sleeping_time: 600
     random_jitter: True
 
+# Detail scraper configuration for Storia and Imobiliare.ro
+# This scraper runs independently and fetches detailed information
+# (full description, all photos, construction year, floor, etc.)
+# for saved listings.
+# detail_scraper:
+#     loop_active: yes  # Should the detail scraper loop endlessly?
+#     hours_lookback: 24  # How many hours back to look for listings to update
+
 # Location of the Database to store already seen offerings
 # Defaults to the current directory
 #database_location: /path/to/database
