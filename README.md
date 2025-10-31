@@ -235,6 +235,44 @@ Alternatively, run the server directly with Flask:
 $ FLASK_APP=flathunter.web flask run
 ```
 
+### Detail Scraper (Storia & Imobiliare.ro)
+
+For Storia.ro and Imobiliare.ro listings, Flathunter includes a separate **Detail Scraper** that runs independently from the main scraper. While the main scraper quickly finds new listings from search pages, the Detail Scraper periodically fetches comprehensive information for each listing, including:
+
+- Full description text
+- Complete photo gallery (all images)
+- Construction year
+- Floor/story number
+- Building type, condition, heating, parking, etc.
+
+#### Running the Detail Scraper
+
+```sh
+$ python detail_scraper.py
+```
+
+The detail scraper can run:
+- **Continuously**: Loops endlessly (like the main scraper)
+- **Once**: Runs a single pass and exits (useful for cron jobs)
+- **As a service**: Via systemd (see `sample-detail-scraper.service`)
+- **On Google Cloud**: As a scheduled Cloud Run job (see `cloud_detail_job.py`)
+
+#### Configuration
+
+Add to your `config.yaml`:
+
+```yaml
+detail_scraper:
+  loop_active: yes  # Should loop endlessly?
+  hours_lookback: 24  # How far back to look for listings
+```
+
+See [docs/DETAIL_SCRAPER.md](docs/DETAIL_SCRAPER.md) for complete documentation including:
+- Deployment options (local, systemd, Docker, Google Cloud)
+- Performance considerations
+- Accessing detailed data via API
+- Troubleshooting
+
 ### Docker
 
 You can either use just Docker or Docker Compose to run the app containerized. We recommend Docker Compose for easier configuration.

@@ -126,6 +126,22 @@ def hunt():
                    body=render_template("exposes.html", exposes=hunter.get_recent_exposes())), \
            status.HTTP_201_CREATED
 
+@app.route('/scrape-details', methods=['GET', 'POST'])
+def scrape_details():
+    """Trigger the detail scraper for Storia and Imobiliare.ro listings"""
+    from detail_scraper import DetailScraper
+    
+    hunter = app.config["HUNTER"]
+    detail_config = hunter.config.get('detail_scraper', {})
+    hours_lookback = detail_config.get('hours_lookback', 24)
+    
+    scraper = DetailScraper(hunter.config, hunter.id_watch)
+    scraper.scrape_details(hours_lookback)
+    
+    return jsonify(status="Success",
+                   message=f"Detail scraping completed for listings from last {hours_lookback} hours"), \
+           status.HTTP_201_CREATED
+
 @app.route('/logout')
 def logout():
     """Logout current user"""

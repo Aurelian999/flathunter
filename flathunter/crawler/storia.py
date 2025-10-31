@@ -136,6 +136,45 @@ class Storia(WebdriverCrawler):
             if text:
                 expose['description'] = text
 
+        # Extract additional details from the characteristics section
+        # Storia.ro lists property details in a structured format
+        details_lists = soup.find_all("div", attrs={"data-cy": re.compile(r"ad\..*")})
+        for details_list in details_lists:
+            # Find all dt/dd pairs (definition lists)
+            dt_elements = details_list.find_all("dt")
+            dd_elements = details_list.find_all("dd")
+            
+            for dt, dd in zip(dt_elements, dd_elements):
+                if not isinstance(dt, Tag) or not isinstance(dd, Tag):
+                    continue
+                    
+                label = dt.get_text(strip=True).lower()
+                value = dd.get_text(strip=True)
+                
+                # Extract construction year (Romanian: "Anul construcției")
+                if 'anul' in label and 'construct' in label:
+                    expose['construction_year'] = value
+                
+                # Extract floor (Romanian: "Etaj")
+                if 'etaj' in label:
+                    expose['floor'] = value
+                
+                # Extract building type (Romanian: "Tip construcție")
+                if 'tip' in label and 'construct' in label:
+                    expose['building_type'] = value
+                
+                # Extract condition/state (Romanian: "Stare")
+                if 'stare' in label:
+                    expose['condition'] = value
+                
+                # Extract heating type (Romanian: "Încălzire")
+                if 'ncălzire' in label or 'incalzire' in label:
+                    expose['heating'] = value
+                
+                # Extract parking (Romanian: "Parcare")
+                if 'parcare' in label:
+                    expose['parking'] = value
+
         # Extract images from gallery
         # Storia.ro typically uses a gallery component
         gallery = soup.find("div", attrs={"data-cy": "ad.gallery"})

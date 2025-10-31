@@ -1,0 +1,14 @@
+[Unit]
+Description=Flathunter Detail Scraper Service
+After=network.target
+
+[Service]
+Type=simple
+User=flathunter
+WorkingDirectory=/path/to/flathunter
+ExecStart=/usr/bin/python3 /path/to/flathunter/detail_scraper.py
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

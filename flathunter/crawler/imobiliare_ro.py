@@ -139,6 +139,59 @@ class ImobiliareRo(WebdriverCrawler):
             if text:
                 expose['description'] = text
 
+        # Extract additional property details
+        # Imobiliare.ro lists property characteristics in various sections
+        characteristics = soup.find_all(["ul", "div"], class_=re.compile(r".*caracteristici.*|.*features.*|.*details.*", re.IGNORECASE))
+        
+        for char_section in characteristics:
+            if not isinstance(char_section, Tag):
+                continue
+            
+            # Look for list items or divs with label-value pairs
+            items = char_section.find_all(["li", "div", "span"])
+            
+            for item in items:
+                if not isinstance(item, Tag):
+                    continue
+                    
+                text = item.get_text(strip=True).lower()
+                
+                # Extract construction year (Romanian: "An construcție")
+                if 'an' in text and 'construct' in text:
+                    year_match = re.search(r'\b(19|20)\d{2}\b', text)
+                    if year_match:
+                        expose['construction_year'] = year_match.group(0)
+                
+                # Extract floor (Romanian: "Etaj")
+                if 'etaj' in text:
+                    # Try to extract floor number
+                    floor_match = re.search(r'etaj\s*[:|-]?\s*(\d+|parter|mansardă)', text, re.IGNORECASE)
+                    if floor_match:
+                        expose['floor'] = floor_match.group(1)
+                
+                # Extract building type (Romanian: "Tip construcție")
+                if 'tip' in text and ('construct' in text or 'clădire' in text):
+                    # Extract value after the label
+                    value_match = re.search(r'tip.*?[:|-]\s*(.+?)(?:\||$)', text, re.IGNORECASE)
+                    if value_match:
+                        expose['building_type'] = value_match.group(1).strip()
+                
+                # Extract condition/state (Romanian: "Stare")
+                if 'stare' in text and 'imobil' in text:
+                    value_match = re.search(r'stare.*?[:|-]\s*(.+?)(?:\||$)', text, re.IGNORECASE)
+                    if value_match:
+                        expose['condition'] = value_match.group(1).strip()
+                
+                # Extract heating type (Romanian: "Sistem încălzire")
+                if 'încălzire' in text or 'incalzire' in text:
+                    value_match = re.search(r'(?:sistem\s+)?(?:î|i)ncălzire.*?[:|-]\s*(.+?)(?:\||$)', text, re.IGNORECASE)
+                    if value_match:
+                        expose['heating'] = value_match.group(1).strip()
+                
+                # Extract parking (Romanian: "Parcare")
+                if 'parcare' in text or 'garaj' in text:
+                    expose['parking'] = text
+
         # Extract images from gallery
         gallery = soup.find("div", class_=re.compile(r".*gallery.*|.*galerie.*", re.IGNORECASE))
         if not gallery:
