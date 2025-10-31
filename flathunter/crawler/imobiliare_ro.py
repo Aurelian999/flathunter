@@ -22,6 +22,7 @@ class ImobiliareRo(WebdriverCrawler):
         """Applies a page number to a formatted search URL and fetches the exposes at that page
         Imobiliare.ro uses JavaScript rendering, so we always use the webdriver"""
         import time
+        import random
         from selenium.webdriver.common.by import By
         from selenium.webdriver.support.ui import WebDriverWait
         from selenium.webdriver.support import expected_conditions as EC
@@ -38,31 +39,59 @@ class ImobiliareRo(WebdriverCrawler):
             # Wait for Imobiliare.ro specific content to load
             # Try multiple selectors to ensure the page has loaded
             try:
-                # Wait for listing items to appear
-                WebDriverWait(driver, 15).until(
-                    lambda d: d.find_elements(By.CSS_SELECTOR, '.listing-item') or
-                              d.find_elements(By.CSS_SELECTOR, '[data-listing-id]') or
-                              d.find_elements(By.CSS_SELECTOR, '.property-item') or
+                # Wait for listing items to appear (reduced timeout from 300s to 45s)
+                WebDriverWait(driver, 45).until(
+                    lambda d: d.find_elements(By.CSS_SELECTOR, '.listing-card') or
+                              d.find_elements(By.CSS_SELECTOR, '[data-cy*="listing-"]') or
+                              d.find_elements(By.CSS_SELECTOR, '[id*="listing-"]') or
                               d.find_elements(By.CLASS_NAME, 'anunt')
                 )
                 logger.debug("Imobiliare.ro: Content loaded successfully")
             except Exception as wait_error:
                 logger.warning("Imobiliare.ro: Timeout waiting for listings, trying anyway: %s", str(wait_error))
             
-            # Additional wait for dynamic content
-            time.sleep(2)
+            # Additional wait for dynamic content with random jitter to appear more human
+            time.sleep(random.uniform(2, 4))
             
             # Scroll to trigger lazy loading (Imobiliare.ro may use lazy loading)
+            # Add random human-like scrolling behavior
             try:
+                # Scroll to 25% of page
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.25);")
+                time.sleep(random.uniform(0.5, 1.5))
+                
+                # Scroll to 50% of page
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
-                time.sleep(1)
+                time.sleep(random.uniform(0.8, 1.8))
+                
+                # Scroll to 75% of page
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.75);")
+                time.sleep(random.uniform(0.5, 1.2))
+                
+                # Scroll to bottom
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(1)
+                time.sleep(random.uniform(1, 2))
+                
+                # Scroll back up a bit (human behavior)
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8);")
+                time.sleep(random.uniform(0.5, 1))
             except Exception as scroll_error:
                 logger.debug("Could not scroll page: %s", str(scroll_error))
             
             # Get the page source after JavaScript execution
             page_source = driver.page_source
+            
+            # Check for bot detection / CAPTCHA
+            if 'captcha-delivery.com' in page_source.lower() or 'please enable js' in page_source.lower():
+                logger.error("Imobiliare.ro: CAPTCHA/bot detection triggered!")
+                logger.error("Response preview: %s", page_source[:500])
+                logger.info("Possible solutions:")
+                logger.info("  1. Enable 'use_proxy_list: True' in config.yaml")
+                logger.info("  2. Configure a CAPTCHA solver (Capmonster recommended)")
+                logger.info("  3. Increase 'sleeping_time' in config.yaml")
+                logger.info("  4. Wait a few hours before retrying")
+                # Return empty soup to avoid processing error page
+                return BeautifulSoup("<html><body></body></html>", 'lxml')
             
             # Debug: Check if we got actual content
             if len(page_source) < 1000:
@@ -130,19 +159,29 @@ class ImobiliareRo(WebdriverCrawler):
                             # Handle srcset format
                             if attr == 'srcset':
                                 url = url.split(',')[0].split(' ')[0]
-                            clean_url = self._clean_image_url(url)
-                            if clean_url and clean_url not in images:
-                                images.append(clean_url)
-                                break
+                            # Simple URL cleaning
+                            if url and 'default-card-thumbnail' not in url:
+                                if url.startswith('//'):
+                                    url = 'https:' + url
+                                elif not url.startswith('http'):
+                                    url = 'https://www.imobiliare.ro' + url if url.startswith('/') else url
+                                if url and url not in images:
+                                    images.append(url)
+                                    break
             
             # Also check for direct img tags
             for img in gallery.find_all('img'):
                 if isinstance(img, Tag):
                     for attr in ['src', 'data-src', 'data-original', 'data-lazy-src']:
-                        url = self._clean_image_url(img.get(attr))
-                        if url and url not in images:
-                            images.append(url)
-                            break
+                        url = img.get(attr)
+                        if url and 'default-card-thumbnail' not in url:
+                            if url.startswith('//'):
+                                url = 'https:' + url
+                            elif not url.startswith('http'):
+                                url = 'https://www.imobiliare.ro' + url if url.startswith('/') else url
+                            if url and url not in images:
+                                images.append(url)
+                                break
             
             if images:
                 expose['images'] = images
@@ -165,12 +204,11 @@ class ImobiliareRo(WebdriverCrawler):
         # Try multiple selectors to find listing items
         advertisements = []
         
-        # Try common patterns for Romanian real estate sites
+        # Try new selectors for the updated Imobiliare.ro structure
         for selector in [
-            {'class': re.compile(r'listing-item')},
-            {'class': re.compile(r'property-item')},
-            {'class': 'anunt'},
-            {'attrs': {'data-listing-id': True}},
+            {'class': re.compile(r'listing-card')},
+            {'attrs': {'data-cy': re.compile(r'listing-\d+')}},
+            {'attrs': {'id': re.compile(r'listing-\d+')}},
             {'class': re.compile(r'.*card.*item.*', re.IGNORECASE)},
         ]:
             if 'attrs' in selector:
@@ -186,7 +224,10 @@ class ImobiliareRo(WebdriverCrawler):
         for adv in advertisements:
             try:
                 # Extract title - look in multiple possible locations
-                title_element = adv.find('h2') or adv.find('h3') or adv.find('a', class_=re.compile(r'.*title.*|.*titlu.*', re.IGNORECASE))
+                title_element = adv.find('span', class_='line-clamp-2') or \
+                               adv.find('h3', class_=re.compile(r'.*text-black.*')) or \
+                               adv.find('h3') or \
+                               adv.find('a', class_=re.compile(r'.*title.*|.*titlu.*', re.IGNORECASE))
                 
                 title = title_element.get_text(strip=True) if isinstance(title_element, Tag) else ""
                 if not title:
@@ -226,44 +267,48 @@ class ImobiliareRo(WebdriverCrawler):
                 ) % 10**16
 
                 # Extract price
-                price_element = adv.find(['span', 'div'], class_=re.compile(r'.*price.*|.*pret.*', re.IGNORECASE))
-                if not price_element:
-                    # Alternative: look for currency symbols
-                    price_element = adv.find(string=re.compile(r'[€$]|\bEUR\b|\bRON\b'))
-                    if price_element and isinstance(price_element.parent, Tag):
-                        price_element = price_element.parent
-                
-                price = price_element.get_text(strip=True) if isinstance(price_element, Tag) else ""
+                price_element = adv.find('div', class_=re.compile(r'.*text-grey-900.*')) or \
+                               adv.find(['span', 'div'], class_=re.compile(r'.*price.*|.*pret.*', re.IGNORECASE)) or \
+                               adv.find(string=re.compile(r'[€$]|\bEUR\b|\bRON\b'))
+                if price_element and isinstance(price_element, Tag):
+                    price = price_element.get_text(strip=True)
+                elif price_element:
+                    # Handle case where price_element is a NavigableString
+                    price = str(price_element).strip()
+                else:
+                    price = ""
 
                 # Extract features (rooms, size)
                 rooms = ""
                 size = ""
                 
-                # Look for features container
-                features_container = adv.find(['ul', 'div'], class_=re.compile(r'.*features.*|.*caracteristici.*', re.IGNORECASE))
+                # Look for features with data-cy attributes (new structure)
+                bedroom_element = adv.find('span', attrs={'data-cy': 'card-bedroom_count'})
+                if isinstance(bedroom_element, Tag):
+                    bedroom_text = bedroom_element.get_text(strip=True)
+                    rooms_match = re.search(r'(\d+)', bedroom_text)
+                    if rooms_match:
+                        rooms = rooms_match.group(1)
                 
-                if isinstance(features_container, Tag):
-                    features_text = features_container.get_text(" ", strip=True)
-                    
-                    # Look for rooms ("camere" in Romanian)
-                    rooms_match = re.search(r'(\d+)\s*(?:camere|camera|cam\.?)', features_text, re.IGNORECASE)
-                    if rooms_match:
-                        rooms = rooms_match.group(1)
-                    
-                    # Look for size
-                    size_match = re.search(r'(\d+)\s*(?:m[²p2]|mp)', features_text, re.IGNORECASE)
+                surface_element = adv.find('span', attrs={'data-cy': 'card-usable_surface'})
+                if isinstance(surface_element, Tag):
+                    surface_text = surface_element.get_text(strip=True)
+                    size_match = re.search(r'(\d+(?:\.\d+)?)', surface_text)
                     if size_match:
                         size = size_match.group(1)
-                else:
-                    # Fallback: search entire ad text
+                
+                # Fallback: search entire ad text for old structure
+                if not rooms or not size:
                     ad_text = adv.get_text(" ", strip=True)
-                    rooms_match = re.search(r'(\d+)\s*(?:camere|camera|cam\.?)', ad_text, re.IGNORECASE)
-                    if rooms_match:
-                        rooms = rooms_match.group(1)
+                    if not rooms:
+                        rooms_match = re.search(r'(\d+)\s*(?:camere|camera|cam\.?)', ad_text, re.IGNORECASE)
+                        if rooms_match:
+                            rooms = rooms_match.group(1)
                     
-                    size_match = re.search(r'(\d+)\s*(?:m[²p2]|mp)', ad_text, re.IGNORECASE)
-                    if size_match:
-                        size = size_match.group(1)
+                    if not size:
+                        size_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:m[²p2]|mp)', ad_text, re.IGNORECASE)
+                        if size_match:
+                            size = size_match.group(1)
 
                 # Extract image
                 picture = adv.find("img")
@@ -271,9 +316,18 @@ class ImobiliareRo(WebdriverCrawler):
                 if isinstance(picture, Tag):
                     # Try different attributes
                     image = picture.get('src') or picture.get('data-src') or picture.get('data-lazy-src')
+                    
+                    # Clean up the image URL if it exists
+                    if image and 'default-card-thumbnail' not in image:
+                        # Simple URL cleaning - ensure it's absolute and remove query params if needed
+                        if image.startswith('//'):
+                            image = 'https:' + image
+                        elif not image.startswith('http'):
+                            image = 'https://www.imobiliare.ro' + image if image.startswith('/') else image
 
                 # Extract address/location
-                location_element = adv.find(['span', 'div', 'p'], class_=re.compile(r'.*location.*|.*address.*|.*locatie.*|.*adresa.*', re.IGNORECASE))
+                location_element = adv.find('p', class_=re.compile(r'.*truncate.*')) or \
+                                  adv.find(['span', 'div', 'p'], class_=re.compile(r'.*location.*|.*address.*|.*locatie.*|.*adresa.*', re.IGNORECASE))
                 address = location_element.get_text(strip=True) if isinstance(location_element, Tag) else ""
 
                 details = {

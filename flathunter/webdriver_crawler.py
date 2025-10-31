@@ -31,6 +31,36 @@ class WebdriverCrawler(Crawler):
             raise DriverLoadException("Unable to load chrome driver when expected")
         return res
 
+    def close_driver(self):
+        """Properly close the WebDriver to avoid handle errors"""
+        if self.driver is not None:
+            try:
+                # Try to quit normally
+                self.driver.quit()
+            except Exception:
+                # If quit fails, try to close the service
+                try:
+                    if hasattr(self.driver, 'service') and self.driver.service:
+                        self.driver.service.stop()
+                except Exception:
+                    pass
+                # Try to close the browser window
+                try:
+                    self.driver.close()
+                except Exception:
+                    pass
+            finally:
+                # Always set to None to prevent further operations
+                self.driver = None
+
+    def __del__(self):
+        """Destructor to ensure WebDriver is properly closed"""
+        try:
+            self.close_driver()
+        except Exception:
+            # Suppress all cleanup errors
+            pass
+
     def get_page(self, search_url, driver=None, page_no=None) -> BeautifulSoup:
         """Applies a page number to a formatted search URL and fetches the exposes at that page"""
         return self.get_soup_from_url(search_url, driver=self.get_driver())

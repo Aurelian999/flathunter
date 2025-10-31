@@ -59,15 +59,35 @@ def get_chrome_driver(driver_arguments):
     """Configure Chrome WebDriver"""
     logger.info('Initializing Chrome WebDriver for crawler...')
     chrome_options = uc.ChromeOptions() # pylint: disable=no-member
-    if platform == "darwin":
-        chrome_options.add_argument("--headless")
+    # if platform == "darwin":
+    #     chrome_options.add_argument("--headless")
     if driver_arguments is not None:
         for driver_argument in driver_arguments:
             chrome_options.add_argument(driver_argument)
     chrome_version = get_chrome_version()
-    chrome_options.add_argument("--headless=new")
+    # chrome_options.add_argument("--headless=new")
     chrome_options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
     driver = uc.Chrome(version_main=chrome_version, options=chrome_options) # pylint: disable=no-member
+
+    # Override the quit method to be more robust
+    original_quit = driver.quit
+    def safe_quit():
+        try:
+            if hasattr(driver, '_web_element_cls') and driver._web_element_cls is not None:
+                original_quit()
+        except (OSError, Exception):
+            # Browser might already be closed
+            pass
+    driver.quit = safe_quit
+
+    # Also override __del__ to suppress errors
+    original_del = driver.__del__
+    def safe_del():
+        try:
+            original_del()
+        except (OSError, Exception):
+            pass
+    driver.__del__ = safe_del
 
     driver.execute_cdp_cmd(
         "Network.setUserAgentOverride",
